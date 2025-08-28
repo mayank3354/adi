@@ -3,8 +3,5 @@
     "src/app/api/ask/route.ts": {
       "maxDuration": 30
     }
-  },
-  "env": {
-    "THESYS_API_KEY": "@thesys_api_key"
   }
 }
