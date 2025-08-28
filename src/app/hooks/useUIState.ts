@@ -1,67 +1,98 @@
 import { useState } from "react";
-import { makeApiCall } from "../helpers/api";
 
-/**
- * Type definition for the UI state.
- * Contains all the state variables needed for the application's UI.
- */
-export type UIState = {
-  /** The current search query input */
-  query: string;
-  /** The current response from the C1 API */
+interface UIState {
+  input: string;
   c1Response: string;
-  /** Whether an API request is currently in progress */
   isLoading: boolean;
-};
+}
 
-/**
- * Custom hook for managing the application's UI state.
- * Provides a centralized way to manage state and API interactions.
- *
- * @returns An object containing:
- * - state: Current UI state
- * - actions: Functions to update state and make API calls
- */
-export const useUIState = () => {
-  // State for managing the search query input
-  const [query, setQuery] = useState("");
-  // State for storing the API response
-  const [c1Response, setC1Response] = useState("");
-  // State for tracking if a request is in progress
-  const [isLoading, setIsLoading] = useState(false);
-  // State for managing request cancellation
-  const [abortController, setAbortController] =
-    useState<AbortController | null>(null);
+interface UIActions {
+  setInput: (input: string) => void;
+  setC1Response: (response: string) => void;
+  setIsLoading: (loading: boolean) => void;
+  submit: (prompt?: string) => Promise<void>;
+}
 
-  /**
-   * Wrapper function around makeApiCall that provides necessary state handlers.
-   * This keeps the component interface simple while handling all state management internally.
-   */
-  const handleApiCall = async (
-    searchQuery: string,
-    previousC1Response?: string
-  ) => {
-    await makeApiCall({
-      searchQuery,
-      previousC1Response,
-      setC1Response,
-      setIsLoading,
-      abortController,
-      setAbortController,
-    });
+export const useUIState = (): {
+  state: UIState;
+  actions: UIActions;
+} => {
+  const [state, setState] = useState<UIState>({
+    input: "",
+    c1Response: "",
+    isLoading: false,
+  });
+
+  const setInput = (input: string) => {
+    setState((prev) => ({ ...prev, input }));
   };
 
-  // Return the state and actions in a structured format
+  const setC1Response = (response: string) => {
+    setState((prev) => ({ ...prev, c1Response: response }));
+  };
+
+  const setIsLoading = (loading: boolean) => {
+    setState((prev) => ({ ...prev, isLoading: loading }));
+  };
+
+  const submit = async (prompt?: string) => {
+    const finalPrompt = prompt || state.input;
+    if (!finalPrompt.trim()) return;
+
+    setIsLoading(true);
+    setC1Response("");
+
+    try {
+      const response = await fetch("/api/ask", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt: finalPrompt,
+          previousC1Response: state.c1Response,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("Response body not found");
+      }
+
+      const decoder = new TextDecoder();
+      let streamResponse = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        const chunk = decoder.decode(value, { stream: !done });
+        
+        streamResponse += chunk;
+        setC1Response(streamResponse);
+
+        if (done) break;
+      }
+
+      // Clear input after successful submission
+      setInput("");
+    } catch (error) {
+      console.error("Error submitting prompt:", error);
+      setC1Response("Error generating response. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
-    state: {
-      query,
-      c1Response,
-      isLoading,
-    },
+    state,
     actions: {
-      setQuery,
+      setInput,
       setC1Response,
-      makeApiCall: handleApiCall,
+      setIsLoading,
+      submit,
     },
   };
 };

@@ -1,48 +1,77 @@
-import { NextRequest } from "next/server";
-import OpenAI from "openai";
-import { ChatCompletionMessageParam } from "openai/resources/chat/completions";
-import { transformStream } from "@crayonai/stream";
+import { streamText } from "ai";
+import { createOpenAI } from "@ai-sdk/openai";
 
-const client = new OpenAI({
-  baseURL: "https://api.thesys.dev/v1/embed",
-  apiKey: process.env.THESYS_API_KEY,
-});
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
 
-export async function POST(req: NextRequest) {
-  const { prompt, previousC1Response } = (await req.json()) as {
-    prompt: string;
-    previousC1Response?: string;
-  };
+// Enhanced system prompt for comprehensive data visualization
+const enhancedSystemPrompt = `
+You are an expert data visualization specialist with deep knowledge of data analysis and chart creation. Your task is to create beautiful, interactive visualizations that help users understand their data better.
 
-  const messages: ChatCompletionMessageParam[] = [];
+## Available Visualization Components:
+- **LineChart** - Use for trends over time, correlations, and fluctuations
+- **AreaChart** - Use for volume/magnitude of change and cumulative values
+- **BarChart** - Use for category comparisons, ranking, and value differences
+- **PieChart** - Use for composition of whole and percentage breakdowns
+- **RadarChart** - Use for multi-variable comparisons and performance evaluation
+- **RadialChart** - Use for progress indicators and goal tracking
 
-  if (previousC1Response) {
-    messages.push({
-      role: "assistant",
-      content: previousC1Response,
+## Display Components:
+- **TextContent** - For formatted text with markdown support
+- **Callout** - For highlighting important information
+- **Table** - For structured data display
+- **ListBlock** - For interactive lists
+- **Accordion** - For organized content sections
+- **Steps** - For sequential processes
+- **CodeBlock** - For code examples
+
+## CRITICAL: When creating data visualizations:
+1. ALWAYS use the appropriate chart component (LineChart, BarChart, PieChart, etc.)
+2. Provide comprehensive data analysis and insights
+3. Use TextContent for explanations and analysis
+4. Use Callout for highlighting key insights
+5. Use Table for data summaries when appropriate
+
+## Chart Selection Guidelines:
+- **LineChart**: Trends over time, correlations, fluctuations
+- **AreaChart**: Volume/magnitude of change, cumulative values
+- **BarChart**: Category comparisons, ranking, value differences
+- **PieChart**: Composition of whole, percentage breakdowns
+- **RadarChart**: Multi-variable comparisons, performance evaluation
+- **RadialChart**: Progress indicators, goal tracking
+
+## IMPORTANT: Always create actual visualizations, not just text descriptions. Use the chart components to display data visually.
+`;
+
+export async function POST(req: Request) {
+  try {
+    const { prompt } = await req.json();
+
+    const model = createOpenAI({
+      apiKey: process.env.THESYS_API_KEY,
+      baseURL: "https://api.thesys.dev/v1/embed",
+    }).chat("c1/anthropic/claude-sonnet-4/v-20250815");
+
+    const result = streamText({
+      model,
+      messages: [
+        {
+          role: "system",
+          content: enhancedSystemPrompt,
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
     });
+
+    return result.toUIMessageStreamResponse();
+  } catch (error) {
+    console.error("Error in ask API:", error);
+    return new Response(
+      JSON.stringify({ error: "Failed to process request" }),
+      { status: 500 }
+    );
   }
-
-  messages.push({
-    role: "user",
-    content: prompt,
-  });
-
-  const llmStream = await client.chat.completions.create({
-    model: "c1/anthropic/claude-sonnet-4/v-20250815",
-    messages: [...messages],
-    stream: true,
-  });
-
-  const responseStream = transformStream(llmStream, (chunk) => {
-    return chunk.choices[0]?.delta?.content || "";
-  });
-
-  return new Response(responseStream as ReadableStream, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache, no-transform",
-      Connection: "keep-alive",
-    },
-  });
 }
