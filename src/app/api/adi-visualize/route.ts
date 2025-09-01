@@ -121,25 +121,25 @@ export async function POST(req: Request) {
     const text = await result.text;
     
     // Generate unique visualization ID
-    const visualizationId = `viz_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const newVisualizationId = `viz_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     // Store visualization data
-    visualizations.set(visualizationId, {
+    visualizations.set(newVisualizationId, {
       visualization_data: text,
       timestamp: new Date().toISOString(),
       prompt: prompt
     });
     
     // Create direct URL to view the visualization
-    const visualizationUrl = `https://adi-black.vercel.app/visualization/${visualizationId}`;
+    const visualizationUrl = `https://adi-black.vercel.app/visualization/${newVisualizationId}`;
     
-    return new Response(JSON.stringify({
-      success: true,
-      visualization_id: visualizationId,
-      visualization_url: visualizationUrl,
-      timestamp: new Date().toISOString(),
-      message: "Visualization created successfully. Use the visualization_url to view it."
-    }), {
+          return new Response(JSON.stringify({
+        success: true,
+        visualization_id: newVisualizationId,
+        visualization_url: visualizationUrl,
+        timestamp: new Date().toISOString(),
+        message: "Visualization created successfully. Use the visualization_url to view it."
+      }), {
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
