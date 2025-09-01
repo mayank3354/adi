@@ -67,7 +67,6 @@ export async function POST(req: Request) {
     });
 
     // Return the complete response as JSON instead of streaming
-    const response = await result.response;
     const text = await result.text;
     
     return new Response(JSON.stringify({
