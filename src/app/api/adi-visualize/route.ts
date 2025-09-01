@@ -177,5 +177,4 @@ export async function OPTIONS() {
   });
 }
 
-// Export the visualizations map for use in other routes
-export { visualizations };
+// Note: visualizations map is stored in memory for this session
