@@ -10,7 +10,8 @@ interface VisualizationData {
   prompt: string;
 }
 
-const VisualizationPage = ({ params }: { params: { id: string } }) => {
+const VisualizationPage = async ({ params }: { params: Promise<{ id: string }> }) => {
+  const { id } = await params;
   const [visualizationData, setVisualizationData] = useState<VisualizationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,10 +25,10 @@ const VisualizationPage = ({ params }: { params: { id: string } }) => {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            action: 'get',
-            visualizationId: params.id
-          })
+                      body: JSON.stringify({
+              action: 'get',
+              visualizationId: id
+            })
         });
 
         if (response.ok) {
@@ -52,13 +53,13 @@ const VisualizationPage = ({ params }: { params: { id: string } }) => {
       }
     };
 
-    if (params.id) {
+    if (id) {
       loadVisualization();
     } else {
       setError('No visualization ID provided');
       setLoading(false);
     }
-  }, [params.id]);
+  }, [id]);
 
   if (loading) {
     return (
