@@ -5,7 +5,12 @@ import { createOpenAI } from "@ai-sdk/openai";
 export const maxDuration = 30;
 
 // In-memory storage for sessions (in production, use Redis or database)
-const sessions = new Map<string, any>();
+interface SessionData {
+  visualization_data: string;
+  timestamp: string;
+  prompt: string;
+}
+const sessions = new Map<string, SessionData>();
 
 // Enhanced system prompt for comprehensive data visualization
 const enhancedSystemPrompt = `
@@ -141,7 +146,7 @@ export async function POST(req: Request) {
   }
 }
 
-export async function OPTIONS(req: Request) {
+export async function OPTIONS() {
   return new Response(null, {
     status: 200,
     headers: {
