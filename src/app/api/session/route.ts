@@ -101,7 +101,7 @@ export async function POST(req: Request) {
 
     // Get the complete response
     const response = await result.response;
-    const text = await response.text();
+    const text = await result.text;
     
     // Generate session ID if not provided
     const currentSessionId = sessionId || `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
