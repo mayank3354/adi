@@ -1,6 +1,3 @@
-"use client";
-
-import { useState, useEffect } from "react";
 import { C1Component, ThemeProvider } from "@thesysai/genui-sdk";
 import "@crayonai/react-ui/styles/index.css";
 
@@ -10,78 +7,48 @@ interface VisualizationData {
   prompt: string;
 }
 
+async function getVisualizationData(id: string): Promise<VisualizationData | null> {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://adi-black.vercel.app'}/api/adi-visualize`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'get',
+        visualizationId: id
+      })
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success && data.visualization_data) {
+        return {
+          visualization_data: data.visualization_data,
+          timestamp: data.timestamp,
+          prompt: data.prompt || ''
+        };
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching visualization:', error);
+    return null;
+  }
+}
+
 const VisualizationPage = async ({ params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params;
-  const [visualizationData, setVisualizationData] = useState<VisualizationData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const visualizationData = await getVisualizationData(id);
 
-  useEffect(() => {
-    const loadVisualization = async () => {
-      try {
-        // Fetch visualization data from the API
-        const response = await fetch('/api/adi-visualize', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-                      body: JSON.stringify({
-              action: 'get',
-              visualizationId: id
-            })
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.visualization_data) {
-            setVisualizationData({
-              visualization_data: data.visualization_data,
-              timestamp: data.timestamp,
-              prompt: data.prompt || ''
-            });
-          } else {
-            setError('Visualization not found');
-          }
-        } else {
-          setError('Failed to load visualization');
-        }
-      } catch (err) {
-        setError('Error loading visualization');
-        console.error('Error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (id) {
-      loadVisualization();
-    } else {
-      setError('No visualization ID provided');
-      setLoading(false);
-    }
-  }, [id]);
-
-  if (loading) {
-    return (
-      <ThemeProvider mode="light">
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-300">Loading visualization...</p>
-          </div>
-        </div>
-      </ThemeProvider>
-    );
-  }
-
-  if (error) {
+  if (!visualizationData) {
     return (
       <ThemeProvider mode="light">
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
           <div className="text-center">
             <div className="text-red-600 text-6xl mb-4">⚠️</div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Error</h1>
-            <p className="text-gray-600 dark:text-gray-300">{error}</p>
+            <p className="text-gray-600 dark:text-gray-300">Visualization not found</p>
             <button 
               onClick={() => window.location.href = '/'}
               className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
