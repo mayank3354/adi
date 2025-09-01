@@ -130,8 +130,8 @@ export async function POST(req: Request) {
       prompt: prompt
     });
     
-    // Create direct URL to view the visualization
-    const visualizationUrl = `https://adi-black.vercel.app/visualization/${newVisualizationId}`;
+    // Create direct URL to view the visualization using the existing page
+    const visualizationUrl = `https://adi-black.vercel.app/visualization?data=${encodeURIComponent(text)}`;
     
           return new Response(JSON.stringify({
         success: true,
