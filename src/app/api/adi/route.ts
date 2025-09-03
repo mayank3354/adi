@@ -47,11 +47,11 @@ export async function POST(req: Request) {
 
     if (!prompt) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           success: false,
           error: "Prompt is required"
         }),
-        { 
+        {
           status: 400,
           headers: {
             'Content-Type': 'application/json',
@@ -82,10 +82,10 @@ export async function POST(req: Request) {
 
     // Get the complete response
     const text = await result.text;
-    
-    // Create direct URL to view the visualization
-    const visualizationUrl = `https://adi-black.vercel.app/visualization?data=${encodeURIComponent(text)}`;
-    
+
+    // Create direct URL to view the visualization using a different route
+    const visualizationUrl = `https://adi-black.vercel.app/viz?data=${encodeURIComponent(text)}`;
+
     return new Response(JSON.stringify({
       success: true,
       visualization_url: visualizationUrl,
@@ -102,12 +102,12 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error("Error in ADI API:", error);
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: false,
         error: "Failed to create visualization",
         details: error instanceof Error ? error.message : "Unknown error"
       }),
-      { 
+      {
         status: 500,
         headers: {
           'Content-Type': 'application/json',
