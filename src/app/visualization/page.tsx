@@ -1,198 +1,80 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { C1Component, ThemeProvider } from "@thesysai/genui-sdk";
-import "@crayonai/react-ui/styles/index.css";
-
-interface VisualizationData {
-  sessionId?: string;
-  visualization_data?: string;
-  timestamp?: string;
-  url?: string;
-}
 
 const VisualizationPage = () => {
-  const [visualizationData, setVisualizationData] = useState<VisualizationData | null>(null);
+  const [data, setData] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
-
-    const loadVisualization = async () => {
+    // Get data from URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const dataParam = urlParams.get('data');
+    
+    console.log('URL Parameters:', { dataParam: dataParam ? 'present' : 'missing' });
+    
+    if (dataParam) {
       try {
-        // Get parameters from URL - only after component is mounted
-        const urlParams = new URLSearchParams(window.location.search);
-        const sessionId = urlParams.get('session');
-        const dataParam = urlParams.get('data');
-        
-        console.log('URL Parameters:', { sessionId, dataParam: dataParam ? 'present' : 'missing' });
-        
-        if (dataParam) {
-          // Handle direct data parameter (from ADI API)
-          try {
-            const decodedData = decodeURIComponent(dataParam);
-            console.log('Decoded data length:', decodedData.length);
-            setVisualizationData({
-              visualization_data: decodedData,
-              timestamp: new Date().toISOString(),
-              url: window.location.href
-            });
-          } catch (err) {
-            console.error('Error decoding data:', err);
-            setError('Failed to decode visualization data from URL');
-          }
-        } else if (sessionId) {
-          // Handle session-based data (legacy approach)
-          const response = await fetch('/api/session', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              action: 'get',
-              sessionId: sessionId
-            })
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            setVisualizationData(data);
-          } else {
-            setError('Failed to load visualization data from session');
-          }
-        } else {
-          setError('No visualization data or session ID provided. Please ensure you have a valid visualization URL.');
-        }
+        const decodedData = decodeURIComponent(dataParam);
+        console.log('Decoded data length:', decodedData.length);
+        setData(decodedData);
       } catch (err) {
-        setError('Error loading visualization');
-        console.error('Error:', err);
-      } finally {
-        setLoading(false);
+        console.error('Error decoding data:', err);
       }
-    };
-
-    loadVisualization();
-  }, [mounted]);
-
-  // Don't render anything until mounted to avoid hydration issues
-  if (!mounted) {
-    return null;
-  }
+    }
+    
+    setLoading(false);
+  }, []);
 
   if (loading) {
     return (
-      <ThemeProvider mode="light">
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-300">Loading visualization...</p>
-          </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading visualization...</p>
         </div>
-      </ThemeProvider>
-    );
-  }
-
-  if (error) {
-    return (
-      <ThemeProvider mode="light">
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-red-600 text-6xl mb-4">⚠️</div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Error</h1>
-            <p className="text-gray-600 dark:text-gray-300 mb-4">{error}</p>
-            <div className="space-y-2">
-              <button 
-                onClick={() => window.location.href = '/'}
-                className="block w-full px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Go Back
-              </button>
-              <button 
-                onClick={() => window.location.reload()}
-                className="block w-full px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-              >
-                Try Again
-              </button>
-            </div>
-          </div>
-        </div>
-      </ThemeProvider>
+      </div>
     );
   }
 
   return (
-    <ThemeProvider mode="light">
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        {/* Header */}
-        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-          <div className="max-w-6xl mx-auto px-4 py-6">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Data Visualization
-            </h1>
-            <p className="text-gray-600 dark:text-gray-300 mt-2">
-              Interactive visualization generated by AI
-            </p>
-            {visualizationData?.timestamp && (
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Generated: {new Date(visualizationData.timestamp).toLocaleString()}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Visualization Content */}
-        <div className="max-w-6xl mx-auto px-4 py-8">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-            <div className="p-6">
-              <div className="min-h-[600px] border-2 border-dashed border-gray-200 dark:border-gray-600 rounded-lg p-4">
-                {visualizationData?.visualization_data ? (
-                  <C1Component
-                    isStreaming={false}
-                    c1Response={visualizationData.visualization_data}
-                    onAction={({ llmFriendlyMessage }) => {
-                      console.log("Action triggered:", llmFriendlyMessage);
-                    }}
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center">
-                      <p className="text-gray-500 dark:text-gray-400 mb-4">
-                        No visualization data available
-                      </p>
-                      <p className="text-sm text-gray-400">
-                        URL: {window.location.href}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-6">
+          Data Visualization
+        </h1>
+        
+        {data ? (
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-xl font-semibold mb-4">Visualization Data</h2>
+            <div className="bg-gray-100 p-4 rounded border">
+              <pre className="text-sm overflow-auto max-h-96">
+                {data}
+              </pre>
             </div>
+            <p className="text-sm text-gray-600 mt-2">
+              Data length: {data.length} characters
+            </p>
           </div>
-
-          {/* Actions */}
-          <div className="mt-6 flex justify-center space-x-4">
-            <button 
-              onClick={() => window.location.href = '/'}
-              className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              Create New Visualization
-            </button>
-            <button 
-              onClick={() => window.print()}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Print / Save
-            </button>
+        ) : (
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <p className="text-gray-500">No visualization data provided.</p>
+            <p className="text-sm text-gray-400 mt-2">
+              Current URL: {window.location.href}
+            </p>
           </div>
+        )}
+        
+        <div className="mt-6 text-center">
+          <button 
+            onClick={() => window.location.href = '/'}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Create New Visualization
+          </button>
         </div>
       </div>
-    </ThemeProvider>
+    </div>
   );
 };
 
