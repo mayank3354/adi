@@ -1,18 +1,8 @@
 import { streamText } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 
-// Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
-// In-memory storage for visualizations (in production, use Redis or database)
-interface VisualizationData {
-  visualization_data: string;
-  timestamp: string;
-  prompt: string;
-}
-const visualizations = new Map<string, VisualizationData>();
-
-// Enhanced system prompt for comprehensive data visualization
 const enhancedSystemPrompt = `
 You are an expert data visualization specialist with deep knowledge of data analysis and chart creation. Your task is to create beautiful, interactive visualizations that help users understand their data better.
 
@@ -53,35 +43,8 @@ You are an expert data visualization specialist with deep knowledge of data anal
 
 export async function POST(req: Request) {
   try {
-    const { prompt, action, visualizationId } = await req.json();
+    const { prompt } = await req.json();
 
-    // Handle GET action for retrieving existing visualizations
-    if (action === 'get' && visualizationId) {
-      const visualizationData = visualizations.get(visualizationId);
-      if (!visualizationData) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: "Visualization not found"
-          }),
-          { status: 404 }
-        );
-      }
-      
-      return new Response(JSON.stringify({
-        success: true,
-        visualization_data: visualizationData.visualization_data,
-        timestamp: visualizationData.timestamp,
-        prompt: visualizationData.prompt
-      }), {
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        }
-      });
-    }
-
-    // Handle CREATE action for new visualizations
     if (!prompt) {
       return new Response(
         JSON.stringify({ 
@@ -120,25 +83,14 @@ export async function POST(req: Request) {
     // Get the complete response
     const text = await result.text;
     
-    // Generate unique visualization ID
-    const newVisualizationId = `viz_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    // Store visualization data
-    visualizations.set(newVisualizationId, {
-      visualization_data: text,
-      timestamp: new Date().toISOString(),
-      prompt: prompt
-    });
-    
-        // Create direct URL to view the visualization using the existing page
+    // Create direct URL to view the visualization
     const visualizationUrl = `https://adi-black.vercel.app/visualization?data=${encodeURIComponent(text)}`;
     
     return new Response(JSON.stringify({
       success: true,
-      visualization_id: newVisualizationId,
       visualization_url: visualizationUrl,
       timestamp: new Date().toISOString(),
-      message: "Visualization created successfully. Use the visualization_url to view it."
+      message: "Visualization created successfully. Use the visualization_url to open in ADI UI tool."
     }), {
       headers: {
         'Content-Type': 'application/json',
@@ -148,7 +100,7 @@ export async function POST(req: Request) {
       },
     });
   } catch (error) {
-    console.error("Error in ADI visualize API:", error);
+    console.error("Error in ADI API:", error);
     return new Response(
       JSON.stringify({ 
         success: false,
@@ -176,5 +128,3 @@ export async function OPTIONS() {
     },
   });
 }
-
-// Note: visualizations map is stored in memory for this session
