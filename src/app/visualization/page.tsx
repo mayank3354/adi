@@ -1,17 +1,21 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from 'next/dynamic';
 
-const VisualizationPage = () => {
+// Force client-side rendering
+const VisualizationPage = dynamic(() => Promise.resolve(() => {
   const [data, setData] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [debug, setDebug] = useState<string[]>([]);
+  const [mounted, setMounted] = useState(false);
 
   const addDebug = (message: string) => {
     setDebug(prev => [...prev, `${new Date().toISOString()}: ${message}`]);
   };
 
   useEffect(() => {
+    setMounted(true);
     addDebug('Component mounted');
     
     // Get data from URL parameter
@@ -38,6 +42,11 @@ const VisualizationPage = () => {
     setLoading(false);
     addDebug('Loading state set to false');
   }, []);
+
+  // Don't render until mounted
+  if (!mounted) {
+    return null;
+  }
 
   if (loading) {
     return (
@@ -104,6 +113,6 @@ const VisualizationPage = () => {
       </div>
     </div>
   );
-};
+}), { ssr: false });
 
 export default VisualizationPage;
