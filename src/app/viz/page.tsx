@@ -5,8 +5,15 @@ import { useState, useEffect } from "react";
 const VizPage = () => {
   const [data, setData] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    
     // Get data from URL parameter
     const urlParams = new URLSearchParams(window.location.search);
     const dataParam = urlParams.get('data');
@@ -24,7 +31,18 @@ const VizPage = () => {
     }
     
     setLoading(false);
-  }, []);
+  }, [mounted]);
+
+  // Don't render until mounted
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Initializing...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -60,7 +78,7 @@ const VizPage = () => {
           <div className="bg-white rounded-lg shadow-sm p-6">
             <p className="text-gray-500">No visualization data provided.</p>
             <p className="text-sm text-gray-400 mt-2">
-              Current URL: {typeof window !== 'undefined' ? window.location.href : 'Server side'}
+              Current URL: {window.location.href}
             </p>
           </div>
         )}
