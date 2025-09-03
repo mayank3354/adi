@@ -19,12 +19,26 @@ const VisualizationPage = () => {
   useEffect(() => {
     const loadVisualization = async () => {
       try {
-        // Get session ID from URL parameters
+        // Get parameters from URL
         const urlParams = new URLSearchParams(window.location.search);
         const sessionId = urlParams.get('session');
+        const dataParam = urlParams.get('data');
         
-        if (sessionId) {
-          // Fetch visualization data from session
+        if (dataParam) {
+          // Handle direct data parameter (from ADI API)
+          try {
+            const decodedData = decodeURIComponent(dataParam);
+            setVisualizationData({
+              visualization_data: decodedData,
+              timestamp: new Date().toISOString(),
+              url: window.location.href
+            });
+          } catch (err) {
+            console.error('Error decoding data:', err);
+            setError('Failed to decode visualization data from URL');
+          }
+        } else if (sessionId) {
+          // Handle session-based data (legacy approach)
           const response = await fetch('/api/session', {
             method: 'POST',
             headers: {
@@ -40,10 +54,10 @@ const VisualizationPage = () => {
             const data = await response.json();
             setVisualizationData(data);
           } else {
-            setError('Failed to load visualization data');
+            setError('Failed to load visualization data from session');
           }
         } else {
-          setError('No session ID provided');
+          setError('No visualization data or session ID provided. Please ensure you have a valid visualization URL.');
         }
       } catch (err) {
         setError('Error loading visualization');
@@ -76,13 +90,21 @@ const VisualizationPage = () => {
           <div className="text-center">
             <div className="text-red-600 text-6xl mb-4">⚠️</div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Error</h1>
-            <p className="text-gray-600 dark:text-gray-300">{error}</p>
-            <button 
-              onClick={() => window.location.href = '/'}
-              className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Go Back
-            </button>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">{error}</p>
+            <div className="space-y-2">
+              <button 
+                onClick={() => window.location.href = '/'}
+                className="block w-full px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Go Back
+              </button>
+              <button 
+                onClick={() => window.location.reload()}
+                className="block w-full px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Try Again
+              </button>
+            </div>
           </div>
         </div>
       </ThemeProvider>
