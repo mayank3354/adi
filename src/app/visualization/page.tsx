@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import dynamic from 'next/dynamic';
 
-// Force client-side rendering
-const VisualizationPage = dynamic(() => Promise.resolve(() => {
+const VisualizationPage = () => {
   const [data, setData] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [debug, setDebug] = useState<string[]>([]);
@@ -113,6 +111,6 @@ const VisualizationPage = dynamic(() => Promise.resolve(() => {
       </div>
     </div>
   );
-}), { ssr: false });
+};
 
 export default VisualizationPage;
