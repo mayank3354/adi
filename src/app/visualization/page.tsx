@@ -39,8 +39,6 @@ const VisualizationPage = () => {
     addDebug('Loading state set to false');
   }, []);
 
-  addDebug(`Render called, loading: ${loading}, data: ${data ? 'present' : 'null'}`);
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
