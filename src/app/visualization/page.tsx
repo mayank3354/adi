@@ -15,19 +15,29 @@ const VisualizationPage = () => {
   const [visualizationData, setVisualizationData] = useState<VisualizationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
     const loadVisualization = async () => {
       try {
-        // Get parameters from URL
+        // Get parameters from URL - only after component is mounted
         const urlParams = new URLSearchParams(window.location.search);
         const sessionId = urlParams.get('session');
         const dataParam = urlParams.get('data');
+        
+        console.log('URL Parameters:', { sessionId, dataParam: dataParam ? 'present' : 'missing' });
         
         if (dataParam) {
           // Handle direct data parameter (from ADI API)
           try {
             const decodedData = decodeURIComponent(dataParam);
+            console.log('Decoded data length:', decodedData.length);
             setVisualizationData({
               visualization_data: decodedData,
               timestamp: new Date().toISOString(),
@@ -68,7 +78,12 @@ const VisualizationPage = () => {
     };
 
     loadVisualization();
-  }, []);
+  }, [mounted]);
+
+  // Don't render anything until mounted to avoid hydration issues
+  if (!mounted) {
+    return null;
+  }
 
   if (loading) {
     return (
@@ -149,6 +164,9 @@ const VisualizationPage = () => {
                     <div className="text-center">
                       <p className="text-gray-500 dark:text-gray-400 mb-4">
                         No visualization data available
+                      </p>
+                      <p className="text-sm text-gray-400">
+                        URL: {window.location.href}
                       </p>
                     </div>
                   </div>
