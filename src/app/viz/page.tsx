@@ -5,44 +5,35 @@ import { useState, useEffect } from "react";
 const VizPage = () => {
   const [data, setData] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [mounted, setMounted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
-    
-    // Get data from URL parameter
-    const urlParams = new URLSearchParams(window.location.search);
-    const dataParam = urlParams.get('data');
-    
-    console.log('URL Parameters:', { dataParam: dataParam ? 'present' : 'missing' });
-    
-    if (dataParam) {
-      try {
-        const decodedData = decodeURIComponent(dataParam);
-        console.log('Decoded data length:', decodedData.length);
-        setData(decodedData);
-      } catch (err) {
-        console.error('Error decoding data:', err);
+    try {
+      // Get data from URL parameter
+      const urlParams = new URLSearchParams(window.location.search);
+      const dataParam = urlParams.get('data');
+      
+      console.log('URL Parameters:', { dataParam: dataParam ? 'present' : 'missing' });
+      
+      if (dataParam) {
+        try {
+          const decodedData = decodeURIComponent(dataParam);
+          console.log('Decoded data length:', decodedData.length);
+          setData(decodedData);
+        } catch (err) {
+          console.error('Error decoding data:', err);
+          setError('Failed to decode visualization data');
+        }
+      } else {
+        setError('No visualization data provided in URL');
       }
+    } catch (err) {
+      console.error('Error processing URL:', err);
+      setError('Error processing URL parameters');
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
-  }, [mounted]);
-
-  // Don't render until mounted
-  if (!mounted) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600">Initializing...</p>
-        </div>
-      </div>
-    );
-  }
+  }, []);
 
   if (loading) {
     return (
@@ -55,12 +46,33 @@ const VizPage = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-6xl mx-auto px-4 py-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-6">Data Visualization</h1>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <h2 className="text-xl font-semibold text-red-800 mb-2">Error</h2>
+            <p className="text-red-700">{error}</p>
+            <p className="text-sm text-red-600 mt-2">Current URL: {typeof window !== 'undefined' ? window.location.href : 'Unknown'}</p>
+          </div>
+          <div className="mt-6 text-center">
+            <button 
+              onClick={() => window.location.href = '/'}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Create New Visualization
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">
-          Data Visualization
-        </h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-6">Data Visualization</h1>
         
         {data ? (
           <div className="bg-white rounded-lg shadow-sm p-6">
@@ -78,7 +90,7 @@ const VizPage = () => {
           <div className="bg-white rounded-lg shadow-sm p-6">
             <p className="text-gray-500">No visualization data provided.</p>
             <p className="text-sm text-gray-400 mt-2">
-              Current URL: {window.location.href}
+              Current URL: {typeof window !== 'undefined' ? window.location.href : 'Unknown'}
             </p>
           </div>
         )}

@@ -83,15 +83,22 @@ export async function POST(req: Request) {
     // Get the complete response
     const text = await result.text;
 
-    // Create direct URL to view the visualization using a different route
+    // Create direct URL to view the visualization
     const visualizationUrl = `https://adi-black.vercel.app/viz?data=${encodeURIComponent(text)}`;
 
-    return new Response(JSON.stringify({
+    // Return a clear, structured response
+    const response = {
       success: true,
       visualization_url: visualizationUrl,
+      visualizationUrl: visualizationUrl, // Alternative key for compatibility
+      url: visualizationUrl, // Simple key
       timestamp: new Date().toISOString(),
-      message: "Visualization created successfully. Use the visualization_url to open in ADI UI tool."
-    }), {
+      message: "Visualization created successfully. Use the visualization_url to open in ADI UI tool.",
+      data: text, // Include the raw data as well
+      prompt: prompt // Echo back the original prompt
+    };
+
+    return new Response(JSON.stringify(response), {
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
